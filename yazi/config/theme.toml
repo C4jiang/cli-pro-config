@@ -1,0 +1,40 @@
+[manager]
+cwd = { fg = "#7aa2f7", bold = true }
+hovered = { fg = "#1f2335", bg = "#7dcfff", bold = true }
+preview_hovered = { underline = true }
+find_keyword = { fg = "#ff9e64", bold = true }
+find_position = { fg = "#bb9af7", bg = "reset", bold = true }
+marker_copied = { fg = "#9ece6a", bg = "#9ece6a" }
+marker_cut = { fg = "#f7768e", bg = "#f7768e" }
+marker_marked = { fg = "#e0af68", bg = "#e0af68" }
+
+[status]
+separator_open = ""
+separator_close = ""
+mode_normal = { fg = "#1f2335", bg = "#7aa2f7", bold = true }
+mode_select = { fg = "#1f2335", bg = "#9ece6a", bold = true }
+mode_unset = { fg = "#1f2335", bg = "#f7768e", bold = true }
+
+[input]
+border = { fg = "#7aa2f7" }
+title = {}
+value = {}
+selected = { reversed = true }
+
+[select]
+border = { fg = "#7aa2f7" }
+active = { fg = "#bb9af7", bold = true }
+inactive = {}
+
+[tasks]
+border = { fg = "#7aa2f7" }
+title = {}
+hovered = { underline = true }
+
+[which]
+mask = { bg = "#1a1b26" }
+cand = { fg = "#7dcfff" }
+rest = { fg = "#c0caf5" }
+desc = { fg = "#bb9af7" }
+separator = " ➜ "
+separator_style = { fg = "#565f89" }

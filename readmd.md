@@ -1,184 +1,85 @@
 # CLI Config
 
-这份目录保存了这台机器当前可用的三套 CLI 环境配置：
+这份仓库保存了当前可迁移的三套 CLI 配置：
 
 - Neovim
 - Yazi
 - tmux
 
-目标是让你在别的设备上冷启动时，几乎直接恢复到当前体验。
+目标不是机械复制整台机器，而是提供一份更适合 Git 保存、也更适合让 agent 在新设备上恢复的配置源。
 
-## 目录结构
+## 当前目录结构
 
 ```text
-cli-config/
-├── nvim/
-│   ├── config/           # ~/.config/nvim
-│   ├── plugins-lazy/     # ~/.local/share/nvim/lazy
-│   └── mason-packages/   # ~/.local/share/nvim/mason/packages
-├── yazi/
-│   ├── config/           # ~/.config/yazi
-│   └── plugins/          # ~/.config/yazi/plugins
-├── tmux/
-│   ├── config/           # ~/.tmux.conf
-│   └── plugins/          # ~/.tmux/plugins
+cli-pro-config/
+├── README.md
 ├── readmd.md
-└── how-to-use.md
+├── how-to-use.md
+├── nvim/
+│   ├── config/
+│   │   ├── init.lua
+│   │   └── lazy-lock.json
+│   └── plugins-lazy/
+├── yazi/
+│   ├── config/
+│   └── plugins/
+└── tmux/
+    ├── config/
+    └── plugins/
 ```
 
-## 这份备份包含什么
+## 本次整理后的原则
+
+保留：
+
+- 主要配置文件
+- 插件源码快照
+- 锁定文件
+- 使用说明
+
+移除：
+
+- `nvim/mason-packages/`
+  - 体积太大，而且偏运行时产物
+  - 更适合在目标机器重新安装
+- `yazi/config/plugins/`
+  - 和 `yazi/plugins/` 重复，保留一份 canonical 版本即可
+
+## 为什么这样更合理
+
+如果要让之后的 agent 来安装，那么最重要的是：
+
+- 看得懂结构
+- 能确定配置内容
+- 知道依赖和恢复步骤
+- 不被机器相关的大型运行时垃圾干扰
+
+所以现在这份仓库比原始快照更适合长期维护。
+
+## 恢复思路
 
 ### Neovim
 
-- 主配置：`init.lua`
-- 插件锁定文件：`lazy-lock.json`
-- 已下载的 lazy.nvim 插件目录
-- Mason 已安装语言工具
+恢复配置和插件目录，然后让目标机器自己：
 
-当前插件主要包括：
-
-- catppuccin
-- lualine
-- neo-tree
-- which-key
-- telescope
-- treesitter
-- nvim-lspconfig
-- mason
-- nvim-cmp
-- luasnip
-- gitsigns
-
-当前 Mason 包包括：
-
-- lua-language-server
-- pyright
-- ruff
+- `:Lazy sync`
+- `:Mason`
+- `:TSUpdate`
 
 ### Yazi
 
-- `yazi.toml`
-- `theme.toml`
-- `keymap.toml`
-- `package.toml`
-- `init.lua`
-- 已装插件源码
-
-当前插件包括：
-
-- smart-enter
-- git
-- full-border
-- bunny
+恢复配置和 `plugins/` 即可。
 
 ### tmux
 
-- `.tmux.conf`
-- TPM 插件目录
+恢复 `.tmux.conf` 和 TPM 插件目录即可。
 
-当前插件包括：
+## 建议
 
-- tpm
-- tmux-resurrect
-- tmux-continuum
+后面如果你还继续迭代它，比较适合再加：
 
-## 新设备安装建议
+- `Brewfile`
+- `install.sh`
+- `check-health.sh`
 
-建议系统先安装这些基础工具：
-
-```bash
-brew install neovim tmux yazi git ripgrep fd fzf lua-language-server
-npm install -g pyright
-brew install ruff
-```
-
-如果不是 macOS，请自行换成对应包管理器。
-
-## 恢复步骤
-
-### 1. 恢复 Neovim
-
-```bash
-mkdir -p ~/.config/nvim
-cp -R ./nvim/config/. ~/.config/nvim/
-
-mkdir -p ~/.local/share/nvim/lazy
-cp -R ./nvim/plugins-lazy/. ~/.local/share/nvim/lazy/
-
-mkdir -p ~/.local/share/nvim/mason/packages
-cp -R ./nvim/mason-packages/. ~/.local/share/nvim/mason/packages/
-```
-
-然后执行：
-
-```bash
-nvim
-```
-
-如果有缺失，再执行：
-
-```vim
-:Lazy sync
-:Mason
-:TSUpdate
-```
-
-### 2. 恢复 Yazi
-
-```bash
-mkdir -p ~/.config/yazi
-cp -R ./yazi/config/. ~/.config/yazi/
-```
-
-如需插件源码一起恢复：
-
-```bash
-mkdir -p ~/.config/yazi/plugins
-cp -R ./yazi/plugins/. ~/.config/yazi/plugins/
-```
-
-然后执行：
-
-```bash
-yazi
-```
-
-### 3. 恢复 tmux
-
-```bash
-cp ./tmux/config/.tmux.conf ~/.tmux.conf
-mkdir -p ~/.tmux/plugins
-cp -R ./tmux/plugins/. ~/.tmux/plugins/
-```
-
-然后启动 tmux：
-
-```bash
-tmux
-```
-
-如果 TPM 没自动工作，可以在 tmux 里按：
-
-```text
-prefix + I
-```
-
-默认 prefix 是 `Ctrl-b`。
-
-## 更稳妥的同步思路
-
-如果你之后想长期维护，建议把这里变成 Git 仓库，然后：
-
-- 配置文件纳入版本控制
-- 插件目录可保留，也可只保留锁定文件
-- 新设备优先恢复配置，再重新安装插件
-
-## 备注
-
-这份目录偏向“可直接拷贝恢复”，而不是最极致精简。
-
-也就是说，它更像一份当前机器状态快照，适合：
-
-- 迁移到新电脑
-- 备份当前 CLI 工作环境
-- 学习自己到底配了什么
+不过你刚才说之后安装让 agent 处理，那现在这样已经够作为配置源使用了。

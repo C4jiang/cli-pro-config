@@ -50,6 +50,12 @@ brew install neovim tmux yazi git ripgrep fd fzf lua-language-server ruff
 npm install -g pyright
 ```
 
+### 字体依赖 (Font Dependency)
+Yazi 图标的渲染依赖于 **Nerd Fonts**。若图标无法正常显示（显示为乱码或方块）：
+- **本地环境**：请确保系统已安装任一 Nerd Font（如 `JetBrainsMono Nerd Font`），且终端模拟器的字体已设置为该字体。
+- **Windows (远程 SSH/WSL)**：必须在 Windows 宿主机上下载并安装 Nerd Font，并配置你使用的终端（如 Windows Terminal 或 VS Code）使用该字体。
+
+
 ## Restore overview (恢复步骤)
 
 ### Neovim

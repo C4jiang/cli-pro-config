@@ -149,6 +149,19 @@ Vim 最核心的是：
 - 大图预览尺寸放得比较宽
 - 适合拿来当 CLI 文件中枢
 
+### 💡 常见问题解答 (Troubleshooting)
+
+#### Q: Yazi 的小图标（Icon）显示不出来（空白/方块/问号）？
+**A:** `yazi` 的图标显示完全依赖 **Nerd Fonts**。若显示异常，是因为你的终端软件没有配置图标字体：
+1. **如果是 Windows 远程连接 (SSH) 或 WSL2**：
+   - 必须在 **Windows 本地** 下载并安装字体，因为画面是由 Windows 终端负责渲染的。
+   - 下载并解压 [JetBrainsMono.zip](https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip)。
+   - 安装其中的 `.ttf` 字体文件。
+   - 将终端的字体族（Font Family）修改为 `'JetBrainsMono Nerd Font'` 或 `'JetBrainsMono NFM'`。
+2. **如果是 Linux 本地环境**：
+   - 需确保系统字体库中已安装 Nerd Font。可将字体文件放入 `~/.local/share/fonts/` 并运行 `fc-cache -fv` 刷新，然后重启终端并应用该字体。
+
+
 ## 3. tmux
 
 ### 当前风格

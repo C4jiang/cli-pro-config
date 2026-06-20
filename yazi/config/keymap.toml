@@ -7,3 +7,14 @@ desc = "Enter the child directory, or open the file"
 on   = [ "m" ]
 run  = "plugin bunny"
 desc = "Jump to a bookmark"
+
+[[manager.prepend_keymap]]
+on   = [ "y" ]
+run  = [ "yank", "plugin clipboard -- --action=copy" ]
+desc = "Yank files and copy to system clipboard"
+
+[[manager.prepend_keymap]]
+on   = [ "<C-p>" ]
+run  = [ "plugin clipboard -- --action=paste" ]
+desc = "Paste files from system clipboard"
+

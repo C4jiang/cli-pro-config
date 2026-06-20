@@ -18,5 +18,10 @@ use = "stelcodes/bunny"
 rev = "71b14a3"
 hash = "18a2829738214fe9bca99a2fef19113d"
 
+[[plugin.deps]]
+use = "XYenon/clipboard"
+rev = "0ac0320"
+hash = "f80172438b4b5c31e94d6c891f734445"
+
 [flavor]
 deps = []

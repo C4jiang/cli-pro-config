@@ -38,9 +38,66 @@ end)
 
 ---@class ClipboardPlugin
 ---@field notify_unknown_display_server boolean
+local function is_wsl()
+	local f = io.open("/proc/version", "r")
+	if not f then return false end
+	local content = f:read("*all")
+	f:close()
+	return content:lower():find("microsoft") ~= nil
+end
+
+local function wsl_to_windows_paths(paths)
+	local win_paths = {}
+	for _, p in ipairs(paths) do
+		local output = Command("wslpath"):arg("-w"):arg(p):output()
+		if output and output.status.success then
+			local win_path = output.stdout:gsub("%s+$", "")
+			table.insert(win_paths, win_path)
+		end
+	end
+	return win_paths
+end
+
+local function windows_to_wsl_paths(paths)
+	local wsl_paths = {}
+	for _, p in ipairs(paths) do
+		local output = Command("wslpath"):arg("-u"):arg(p):output()
+		if output and output.status.success then
+			local wsl_path = output.stdout:gsub("%s+$", "")
+			table.insert(wsl_paths, wsl_path)
+		end
+	end
+	return wsl_paths
+end
+
 local M = {
 	notify_unknown_display_server = false,
 }
+
+function M:paste_wsl()
+	local output, err = self:run_command("powershell.exe", {
+		"-NoProfile",
+		"-NonInteractive",
+		"-Sta",
+		"-Command",
+		"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetFileDropList()",
+	})
+	if err then
+		return nil, err
+	end
+
+	local stdout = (output and output.stdout or ""):gsub("%s+$", "")
+	if stdout == "" then
+		return {}, nil
+	end
+	local win_paths = {}
+	for line in stdout:gmatch("[^\r\n]+") do
+		if line ~= "" then
+			table.insert(win_paths, line)
+		end
+	end
+	return windows_to_wsl_paths(win_paths), nil
+end
 
 ---@param job ClipboardJob
 ---@return nil
@@ -63,6 +120,24 @@ function M:copy()
 	ya.dbg("Clipboard", "files", paths)
 	if #paths == 0 then
 		return self:notify_error("No files to copy")
+	end
+
+	if is_wsl() then
+		local win_paths = wsl_to_windows_paths(paths)
+		local add_files = {}
+		for _, p in ipairs(win_paths) do
+			local escaped = p:gsub("'", "''")
+			table.insert(add_files, string.format("[void]$col.Add('%s')", escaped))
+		end
+		local cmd = string.format(
+			"Add-Type -AssemblyName System.Windows.Forms; $col = New-Object System.Collections.Specialized.StringCollection; %s; [System.Windows.Forms.Clipboard]::SetFileDropList($col)",
+			table.concat(add_files, "; ")
+		)
+		local _, err = self:run_command("powershell.exe", { "-NoProfile", "-NonInteractive", "-Sta", "-Command", cmd })
+		if err then
+			return self:notify_error(err)
+		end
+		return
 	end
 
 	local cmd, err = nil, nil
@@ -189,7 +264,7 @@ end
 ---@return string? err
 function M:run_command(program, args, opts)
 	opts = opts or {}
-	local cmd = Command(program)
+	local cmd = Command(program):stdin(Command.NULL)
 	if args then
 		cmd = cmd:arg(args)
 	end
@@ -280,7 +355,9 @@ end
 ---@return nil
 function M:paste()
 	local paths, err = nil, nil
-	if ya.target_os() == "linux" then
+	if is_wsl() then
+		paths, err = self:paste_wsl()
+	elseif ya.target_os() == "linux" then
 		paths, err = self:paste_linux()
 	elseif ya.target_os() == "macos" then
 		paths, err = self:paste_macos()

@@ -10,11 +10,12 @@ desc = "Jump to a bookmark"
 
 [[manager.prepend_keymap]]
 on   = [ "y" ]
-run  = [ "yank", "plugin clipboard -- --action=copy" ]
+run  = "plugin clipboard -- --action=copy"
 desc = "Yank files and copy to system clipboard"
 
 [[manager.prepend_keymap]]
 on   = [ "<C-p>" ]
-run  = [ "plugin clipboard -- --action=paste" ]
+run  = "plugin clipboard -- --action=paste"
 desc = "Paste files from system clipboard"
+
 

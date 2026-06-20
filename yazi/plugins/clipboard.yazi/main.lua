@@ -18,15 +18,23 @@
 
 ---@param state table
 ---@return string[]
-local get_yanked_paths = ya.sync(function(state)
+local get_selected_paths = ya.sync(function()
+	local folder = cx.active.current
+	local selected = folder.selected
 	local paths = {}
-	for _, v in pairs(cx.yanked) do
-		if not v.is_regular then
-			goto continue
+
+	-- If no files are selected, use the hovered file
+	if next(selected) == nil then
+		local h = folder.hovered
+		if h then
+			table.insert(paths, tostring(h.url))
 		end
-		table.insert(paths, tostring(v))
-		::continue::
+	else
+		for url, _ in pairs(selected) do
+			table.insert(paths, tostring(url))
+		end
 	end
+
 	return paths
 end)
 
@@ -38,21 +46,35 @@ end)
 
 ---@class ClipboardPlugin
 ---@field notify_unknown_display_server boolean
+local function log_debug(msg)
+	local f = io.open("/home/dev/clipboard_debug.log", "a")
+	if f then
+		f:write(os.date("%Y-%m-%d %H:%M:%S") .. " DEBUG: " .. tostring(msg) .. "\n")
+		f:close()
+	end
+end
+
 local function is_wsl()
 	local f = io.open("/proc/version", "r")
 	if not f then return false end
 	local content = f:read("*all")
 	f:close()
-	return content:lower():find("microsoft") ~= nil
+	local res = content:lower():find("microsoft") ~= nil
+	log_debug("is_wsl check result: " .. tostring(res))
+	return res
 end
 
 local function wsl_to_windows_paths(paths)
 	local win_paths = {}
 	for _, p in ipairs(paths) do
+		log_debug("Converting path: " .. tostring(p))
 		local output = Command("wslpath"):arg("-w"):arg(p):output()
 		if output and output.status.success then
 			local win_path = output.stdout:gsub("%s+$", "")
+			log_debug("Converted path result: " .. tostring(win_path))
 			table.insert(win_paths, win_path)
+		else
+			log_debug("wslpath failed for path: " .. tostring(p))
 		end
 	end
 	return win_paths
@@ -61,10 +83,14 @@ end
 local function windows_to_wsl_paths(paths)
 	local wsl_paths = {}
 	for _, p in ipairs(paths) do
+		log_debug("Converting windows path: " .. tostring(p))
 		local output = Command("wslpath"):arg("-u"):arg(p):output()
 		if output and output.status.success then
 			local wsl_path = output.stdout:gsub("%s+$", "")
+			log_debug("Converted path result: " .. tostring(wsl_path))
 			table.insert(wsl_paths, wsl_path)
+		else
+			log_debug("wslpath failed for windows path: " .. tostring(p))
 		end
 	end
 	return wsl_paths
@@ -75,6 +101,7 @@ local M = {
 }
 
 function M:paste_wsl()
+	log_debug("paste_wsl() called")
 	local output, err = self:run_command("powershell.exe", {
 		"-NoProfile",
 		"-NonInteractive",
@@ -83,10 +110,12 @@ function M:paste_wsl()
 		"Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Clipboard]::GetFileDropList()",
 	})
 	if err then
+		log_debug("paste_wsl run_command failed: " .. tostring(err))
 		return nil, err
 	end
 
 	local stdout = (output and output.stdout or ""):gsub("%s+$", "")
+	log_debug("Powershell paste output: " .. stdout)
 	if stdout == "" then
 		return {}, nil
 	end
@@ -116,7 +145,8 @@ end
 
 ---@return nil
 function M:copy()
-	local paths = get_yanked_paths()
+	local paths = get_selected_paths()
+	log_debug("copy() called, selected paths count: " .. #paths)
 	ya.dbg("Clipboard", "files", paths)
 	if #paths == 0 then
 		return self:notify_error("No files to copy")
@@ -133,10 +163,14 @@ function M:copy()
 			"Add-Type -AssemblyName System.Windows.Forms; $col = New-Object System.Collections.Specialized.StringCollection; %s; [System.Windows.Forms.Clipboard]::SetFileDropList($col)",
 			table.concat(add_files, "; ")
 		)
+		log_debug("Powershell copy command: " .. cmd)
 		local _, err = self:run_command("powershell.exe", { "-NoProfile", "-NonInteractive", "-Sta", "-Command", cmd })
 		if err then
+			log_debug("Powershell copy run_command failed: " .. tostring(err))
 			return self:notify_error(err)
 		end
+		log_debug("Powershell copy command executed successfully")
+		ya.emit("yank", {})
 		return
 	end
 
@@ -171,6 +205,7 @@ function M:copy()
 		if err then
 			return self:notify_error(err)
 		end
+		ya.emit("yank", {})
 		return
 	end
 
@@ -194,6 +229,7 @@ function M:copy()
 	if err then
 		return self:notify_error(err)
 	end
+	ya.emit("yank", {})
 end
 
 ---@return string? cmd
@@ -355,6 +391,7 @@ end
 ---@return nil
 function M:paste()
 	local paths, err = nil, nil
+	log_debug("paste() called")
 	if is_wsl() then
 		paths, err = self:paste_wsl()
 	elseif ya.target_os() == "linux" then
@@ -699,6 +736,11 @@ end
 ---@param msg string
 ---@return nil
 function M:notify_error(msg)
+	local f = io.open("/home/dev/clipboard_debug.log", "a")
+	if f then
+		f:write(os.date("%Y-%m-%d %H:%M:%S") .. " ERROR: " .. tostring(msg) .. "\n")
+		f:close()
+	end
 	ya.notify({ title = "Clipboard", content = msg, timeout = 6.5, level = "error" })
 end
 

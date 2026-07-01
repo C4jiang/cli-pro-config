@@ -192,6 +192,20 @@ Vim 最核心的是：
 - `Ctrl-b -`
 - `Ctrl-b c`
 
+### 剪贴板同步与透传说明
+
+为了使 tmux 内复制的内容能无缝同步到本机的系统剪贴板，本配置采用了以下两种机制：
+
+1. **OSC 52 协议透传（系统自带剪贴板）**：
+   - 配置中启用了 `set -g set-clipboard on`。
+   - 当你使用支持 OSC 52 的终端软件（如 iTerm2、Alacritty、Kitty、WezTerm 或 VS Code 内置终端）时，tmux 会自动将复制的内容透传给终端，由终端写入系统剪贴板。
+   - *注意*：iTerm2 需在设置中开启 `Applications in terminal may access clipboard` 选项。
+
+2. **本地 `copy-command` 管道（针对不支持 OSC 52 的终端）**：
+   - macOS 自带的 **Terminal.app 不支持 OSC 52**。
+   - 为了兼容 Terminal.app，在 Mac 的配置中我们配置了 `set -s copy-command 'pbcopy'`。当在 macOS 本地运行 tmux 时，复制的内容会通过管道直接写入 macOS 的剪贴板服务，无需终端支持。
+   - 在 Linux 环境下，我们使用 `xclip` 替代，配置为 `set -s copy-command 'xclip -selection clipboard'`。
+
 ### 必学 tmux 常用键
 
 #### 会话 / 窗口 / 面板

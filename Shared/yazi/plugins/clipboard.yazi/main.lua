@@ -54,6 +54,23 @@ local function log_debug(msg)
 	end
 end
 
+---@param value string
+---@return string
+local function base64_encode(value)
+	local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+	local out = {}
+	for i = 1, #value, 3 do
+		local a, b, c = value:byte(i, i + 2)
+		local triple = (a << 16) | ((b or 0) << 8) | (c or 0)
+		local n = #value - i + 1
+		out[#out + 1] = alphabet:sub(((triple >> 18) & 0x3f) + 1, ((triple >> 18) & 0x3f) + 1)
+		out[#out + 1] = alphabet:sub(((triple >> 12) & 0x3f) + 1, ((triple >> 12) & 0x3f) + 1)
+		out[#out + 1] = n > 1 and alphabet:sub(((triple >> 6) & 0x3f) + 1, ((triple >> 6) & 0x3f) + 1) or "="
+		out[#out + 1] = n > 2 and alphabet:sub((triple & 0x3f) + 1, (triple & 0x3f) + 1) or "="
+	end
+	return table.concat(out)
+end
+
 local function is_wsl()
 	local f = io.open("/proc/version", "r")
 	if not f then return false end
@@ -136,11 +153,42 @@ function M:entry(job)
 
 	if job.args.action == "copy" then
 		return self:copy()
+	elseif job.args.action == "copy-path-osc52" then
+		return self:copy_path_osc52()
 	elseif job.args.action == "paste" then
 		return self:paste()
 	else
 		return self:notify_error("Unknown action: " .. tostring(job.args.action))
 	end
+end
+
+---@return nil
+function M:copy_path_osc52()
+	if ya.target_os() ~= "windows" then
+		return self:notify_error("OSC 52 path copy is configured for Windows SSH sessions")
+	end
+
+	local paths = get_selected_paths()
+	if #paths == 0 then
+		return self:notify_error("No file to copy")
+	end
+	table.sort(paths)
+
+	local osc52 = "\27]52;c;" .. base64_encode(table.concat(paths, "\n")) .. "\7"
+	local encoded = base64_encode(osc52)
+	local script = string.format(
+		"$b=[Convert]::FromBase64String('%s');$s=[Console]::OpenStandardOutput();$s.Write($b,0,$b.Length);$s.Flush()",
+		encoded
+	)
+	local _, err = self:run_command("powershell.exe", { "-NoProfile", "-NonInteractive", "-Command", script }, {
+		capture_output = false,
+		stdout = Command.INHERIT,
+		stderr = Command.NULL,
+	})
+	if err then
+		return self:notify_error("OSC 52 copy failed: " .. err)
+	end
+	ya.notify({ title = "Clipboard", content = "Path copied to local clipboard", timeout = 2, level = "info" })
 end
 
 ---@return nil

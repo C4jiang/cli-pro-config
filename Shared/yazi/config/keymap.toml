@@ -14,8 +14,13 @@ run  = "plugin clipboard -- --action=copy"
 desc = "Yank files and copy to system clipboard"
 
 [[manager.prepend_keymap]]
+on   = [ "c", "c" ]
+for  = "windows"
+run  = "plugin clipboard -- --action=copy-path-osc52"
+desc = "Copy selected path(s) to the local terminal clipboard via OSC 52"
+
+[[manager.prepend_keymap]]
 on   = [ "<C-p>" ]
 run  = "plugin clipboard -- --action=paste"
 desc = "Paste files from system clipboard"
-
 

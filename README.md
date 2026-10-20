@@ -115,7 +115,19 @@ cat ./Shared/git/config >> ~/.gitconfig
 # For Windows (run in git bash / powershell):
 # Apply Shared/git/config first, then Windows/git/config settings
 ```
+
+### SSH into Windows CLI sessions (macOS)
+
+When connecting from macOS through tmux to a Windows OpenSSH server, Windows may receive `TERM=tmux-256color`. Native Windows CLI programs such as Yazi and Neovim can then redraw incorrectly, with rows or line numbers appearing misaligned. Set the terminal type for the Windows SSH host only in `~/.ssh/config`:
+
+```sshconfig
+Host <your-windows-host-alias>
+    SetEnv TERM=xterm-256color
 ```
+
+Add `SetEnv` to the existing host entry, replacing the placeholder with the alias already defined in your SSH config. Keep host addresses, usernames, and private-key paths in the local `~/.ssh/config`; this repository only documents the terminal compatibility setting. Reconnect and confirm the remote shell receives `xterm-256color` before reopening Yazi or Neovim.
+
+The shared Yazi keymap also adds a Windows-only `c`, `c` action that copies selected/hovered paths as text to the local terminal clipboard with OSC 52. The existing `y` action remains the Windows file clipboard operation. This requires tmux clipboard integration (`set-clipboard on`) and an iTerm2 profile that permits terminal applications to access the clipboard.
 
 ---
 

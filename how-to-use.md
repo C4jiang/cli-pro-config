@@ -127,6 +127,7 @@ Vim 最核心的是：
   - 目录：进入
   - 文件：打开
 - `m` 打开 `bunny` 书签跳转
+- Windows SSH 会话中按 `c`、`c`，把悬停项或选中项的路径复制到本机终端剪贴板（OSC 52）
 
 ### 建议先学的 Yazi 常用键
 
@@ -160,6 +161,19 @@ Vim 最核心的是：
    - 将终端的字体族（Font Family）修改为 `'JetBrainsMono Nerd Font'` 或 `'JetBrainsMono NFM'`。
 2. **如果是 Linux 本地环境**：
    - 需确保系统字体库中已安装 Nerd Font。可将字体文件放入 `~/.local/share/fonts/` 并运行 `fc-cache -fv` 刷新，然后重启终端并应用该字体。
+
+#### Q: SSH 到 Windows 后，Yazi / Neovim 行号或界面错位、移动光标后才刷新？
+**A:** 如果从 macOS 的 tmux 连接 Windows OpenSSH，Windows 可能会收到 `TERM=tmux-256color`。Windows 原生 CLI 程序不在远端 tmux 里运行，这个终端类型可能导致重绘错乱。只给 Windows SSH 主机设置 `xterm-256color`：
+
+```sshconfig
+Host <your-windows-host-alias>
+    SetEnv TERM=xterm-256color
+```
+
+把 `SetEnv` 加到 `~/.ssh/config` 里已有的 Windows 主机条目中，并将占位符替换成现有别名。重新连接后可在远端 PowerShell 执行 `Write-Output $env:TERM`，应显示 `xterm-256color`。不要把此设置放进 tmux 的全局 `default-terminal`，因为那会影响本机及其他 SSH 主机。
+
+#### Q: Windows SSH 里的 Yazi 按 `y` 后，路径没有进入 Mac 剪贴板？
+**A:** `y` 仍把文件复制到 Windows 文件剪贴板；远端系统剪贴板不会自动同步到 Mac。Windows 专用的 `c`、`c` 快捷键会把当前悬停项或选中项的路径作为文本，通过 OSC 52 发给本机终端。此功能需要 tmux 的 `set-clipboard on`，并且 iTerm2 允许终端应用访问剪贴板。若连接不是 Windows SSH 会话，不会添加这个快捷键。
 
 
 ## 3. tmux
